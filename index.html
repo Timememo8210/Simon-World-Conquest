@@ -519,7 +519,7 @@ function gameLoop(ts) {
   economyTick(dt);
 
   aiTimer += dt;
-  var aiInterval = diff === 'easy' ? 5 : (diff === 'hard' ? 1.5 : 3);
+  var aiInterval = diff === 'easy' ? 7 : (diff === 'hard' ? 1.5 : 4);
   if (aiTimer >= aiInterval) {
     aiTimer = 0;
     aiTick();
@@ -544,7 +544,7 @@ function economyTick(dt) {
   for (var key in G.hexes) {
     var h = G.hexes[key];
     if (h.owner === 'player') {
-      pIncome += (h.quality * 2 + h.factories * 5) * dt;
+      pIncome += (h.quality * 1 + h.factories * 3) * dt;
       pTroops += h.troops;
       pHexes++;
     }
@@ -562,7 +562,7 @@ function economyTick(dt) {
     for (var key in G.hexes) {
       var h = G.hexes[key];
       if (h.owner === ai.id) {
-        income += (h.quality * 2 + h.factories * 5) * dt;
+        income += (h.quality * 1 + h.factories * 3) * dt;
         troops += h.troops;
         hcount++;
       }
