@@ -6,17 +6,17 @@
 <title>Hex War</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#1a1a2e;color:#eee;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:none}
+body{background:#2a2a3e;color:#eee;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:none}
 canvas{display:block;cursor:grab}
 canvas:active{cursor:grabbing}
-#titleScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+#titleScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a3e,#3a3580,#2e2e4e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
 #titleScreen h1{font-size:3em;margin-bottom:.3em;background:linear-gradient(90deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 #titleScreen .sub{color:#aaa;margin-bottom:2em;font-size:1.1em}
 .menu-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 40px;margin:8px;font-size:1.1em;border-radius:12px;cursor:pointer;transition:all .2s;min-width:220px}
 .menu-btn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(102,126,234,.4)}
 .menu-btn:disabled{opacity:.4;cursor:default;transform:none}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
-.setup-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:20px}
+.setup-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a3e,#3a3580,#2e2e4e);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:20px}
 .setup-screen h2{margin-bottom:20px;font-size:1.8em;color:#ffd200}
 .country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-width:800px;width:100%;max-height:60vh;overflow-y:auto;padding:10px}
 .country-card{padding:12px;border-radius:10px;cursor:pointer;text-align:center;transition:all .2s;border:2px solid transparent}
@@ -120,123 +120,97 @@ canvas:active{cursor:grabbing}
 var MAP_COLS = 80;
 var MAP_ROWS = 45;
 var MAP_DATA = [
-
-"..............................RRRRRRRRRRRRRRR...................................",
-
-".........................RRRRRRRRRRRRRRRRRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRRRRRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRRRRRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRRRRRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRRRRRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRPPPRRRRR..................................",
-
-".....CCCCCCCCCCCCCCCCCC.........KKFFFFGPP.............JJJ.......................",
-
-".....CCCCCCCCCCCCCCCCCC.........KKFFFFGPP.............JJJ.......................",
-
-".....UUUUUUUUUUUUUUUU.............FFFFG.......HHHHH...JJJ.......................",
-
-".....UUUUUUUUUUUUUUUU...........SSSS.II.....HHHHHHHHH.JJJ.......................",
-
-".....UUUUUUUUUUUUUUUU...........SSSS.IITTTT.HHHHHHHHH...........................",
-
-".....UUUUUUUUUUUUUUUU..........DDDDD.IITTTT.HHHHHHHHH...........................",
-
-"......MMUUUUUUUUUUUUU..........DDDDD....QQ..HHHHHHHHH...........................",
-
-"....MMMMMMMMMMM................DDDDDEEEQQQQ.HHHHHHHHH...........................",
-
-"......MMMMMMMMM.....................EEEQQQQ.HHHHHHHHH...........................",
-
-"........LLLLLLL.....................EEEQQQQ.VVHHHHHHH...........................",
-
-".........BLLLLLB...............NNNNN...QQQQVVVVVV...............................",
-
-".......BBBBBBBBB.............NNNNNNN...QQQQVVVVVV...............................",
-
-"......BBBBBBBBBB...............NNNNN.......VVVVVV...............................",
-
-".........BBBBBBB...............NNNNN.......VVVVVV...............................",
-
-".........BBBBBBB...............NNNNN.......VVVVVV...............................",
-
-".........BBBBBBB..............ONNNNN.......VVVVVV...............................",
-
-".........BBBBBBB............OOOOOOO..............XXXXXXX........................",
-
-".........BBBBBBB..............OOOOO............XXXXXXXXX........................",
-
-".........BBBBBBB..............OOOOO..............XXXXXXXW.......................",
-
-".......AAAAAAAA...................................WWWWWWWWW.....................",
-
-"......AAAAAAAAA.............ZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA...........ZZZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA.............ZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA.............ZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA.............ZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA.............ZZZZZZ................WWWWWWWWW.....................",
-
-".........AAAAAA...................................WWWWWWWWW.....................",
-
-".........AAAAAA.................................................................",
-
+"..............................RRRRRRRRRRRRRRRRRR................................",
+".........................RRRRRRRRRRRRRRRRRRRRRRRR...............................",
+".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRRRRRRRRRRRRRRRR...............................",
+".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRR77RRRRRRRRRRRR...............................",
+".....CCCCCCCCCCCCCCCCCC..RRRRRRRRRR77RRRRRRRRRRRR...............................",
+".....CCCCCCCCCCCCCCCCCC..RRRRYYKKRR77RRRRRRRRRRRR...............................",
+".....CCCCCCCCCCCCCCCCCC......YYKK......PP666....................................",
+"........UUUUUUUUUUUUU............FFFGGGPP666.gggg.....JJJ.......................",
+".....UUUUUUUUUUUUUUUU............FFFGGG88666.gggg..dddJJJ.......................",
+".....UUUUUUUUUUUUUUUU..........SSFFFII.88....gHHHHHHddJJJ.......................",
+".....UUUUUUUUUUUUUUUU..........SSSS.IITTT...HHHHHHHHHdJJJ.......................",
+".....UUUUUUUUUUUUUUUU.........DDDDD9IITTT...HHHHHHHHH...........................",
+".....UUUUUUUUUUUUUUUU.........DDDDD999...cccHHHHHHHHH...........................",
+"......MMUUUUUUUUUUUUU.........DDDDD999..QQQQbbbHHHHHH...........................",
+"....MMMMMMMMMMM.....................EEE.QQQQbbbHHHHHH...........................",
+".....1MMMMMMMMM.....................EEE.QQQQbbbHHHHHH...........................",
+"........2222222333..................EEE.QQQQHHHHHHHHH...........................",
+"........2222222333............NNNNN...000...VVVVV...............................",
+"....444BBBBBBBBB..............NNNNN...000...VVVVV.fff...........................",
+"....44BBBBBBBBBB..............NNNNN...000...VVVVV.fff...........................",
+"....444BBBBBBBBB..............NNNNN...aaa...VVVVVeeef...........................",
+".......BBBBBBBBB..............NNNNN...aaa...VVVVVeee............................",
+".......BBBBBBBBB.............OOOOO..........VVVVVeee............................",
+".......BBBBBBBBB.............OOOOO...............XXXXXXX........................",
+".......BBBBBBBBB.............OOOOO...............XXXXXXX........................",
+".......BBBBBBBBB.................................XXXXXXX........................",
+"........AAAAAAA...................................WWWWWWWWW.....................",
+"........AAAAAAA............ZZZZZZ.................WWWWWWWWW.....................",
+".....555AAAAAAA............ZZZZZZ.................WWWWWWWWW.....................",
+".....555AAAAAAA............ZZZZZZ.................WWWWWWWWW.....................",
+".....555AAAAAAA............ZZZZZZ.................WWWWWWWWWhh...................",
+".....555AAAAAAA............ZZZZZZ.................WWWWWWWWWhh...................",
+".....555AAAAAAA...................................WWWWWWWWWhh...................",
+".....555..........................................WWWWWWWWWhh...................",
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
 "................................................................................",
-
+"................................................................................",
 "................................................................................",
 ];
 
 var COUNTRY_DEFS = {
-  R:{id:'russia',en:'Russia',zh:'俄罗斯',q:5,color:'#5C6BC0'},
   C:{id:'canada',en:'Canada',zh:'加拿大',q:4,color:'#42A5F5'},
   U:{id:'usa',en:'USA',zh:'美国',q:5,color:'#66BB6A'},
   M:{id:'mexico',en:'Mexico',zh:'墨西哥',q:3,color:'#FFA726'},
+  1:{id:'guatemala',en:'Guatemala',zh:'危地马拉',q:2,color:'#8BC34A'},
+  2:{id:'colombia',en:'Colombia',zh:'哥伦比亚',q:3,color:'#AB47BC'},
+  3:{id:'venezuela',en:'Venezuela',zh:'委内瑞拉',q:2,color:'#7E57C2'},
   B:{id:'brazil',en:'Brazil',zh:'巴西',q:4,color:'#26A69A'},
   A:{id:'argentina',en:'Argentina',zh:'阿根廷',q:3,color:'#EF5350'},
-  L:{id:'colombia',en:'Colombia',zh:'哥伦比亚',q:3,color:'#AB47BC'},
+  4:{id:'peru',en:'Peru',zh:'秘鲁',q:2,color:'#FF8A65'},
+  5:{id:'chile',en:'Chile',zh:'智利',q:2,color:'#78909C'},
   K:{id:'uk',en:'UK',zh:'英国',q:4,color:'#1565C0'},
+  Y:{id:'ireland',en:'Ireland',zh:'爱尔兰',q:2,color:'#4CAF50'},
   F:{id:'france',en:'France',zh:'法国',q:4,color:'#2196F3'},
   G:{id:'germany',en:'Germany',zh:'德国',q:5,color:'#FDD835'},
   S:{id:'spain',en:'Spain',zh:'西班牙',q:3,color:'#FF7043'},
-  I:{id:'italy',en:'Italy',zh:'意大利',q:4,color:'#7E57C2'},
+  I:{id:'italy',en:'Italy',zh:'意大利',q:4,color:'#9C27B0'},
   P:{id:'poland',en:'Poland',zh:'波兰',q:3,color:'#EC407A'},
-  E:{id:'egypt',en:'Egypt',zh:'埃及',q:3,color:'#FFB300'},
-  T:{id:'turkey',en:'Turkey',zh:'土耳其',q:3,color:'#8D6E63'},
+  6:{id:'ukraine',en:'Ukraine',zh:'乌克兰',q:3,color:'#FFC107'},
+  7:{id:'sweden',en:'Sweden',zh:'瑞典',q:3,color:'#00BCD4'},
+  8:{id:'romania',en:'Romania',zh:'罗马尼亚',q:2,color:'#8D6E63'},
   D:{id:'algeria',en:'Algeria',zh:'阿尔及利亚',q:3,color:'#3F51B5'},
+  9:{id:'libya',en:'Libya',zh:'利比亚',q:2,color:'#607D8B'},
+  E:{id:'egypt',en:'Egypt',zh:'埃及',q:3,color:'#FFB300'},
   N:{id:'nigeria',en:'Nigeria',zh:'尼日利亚',q:2,color:'#43A047'},
   O:{id:'drcongo',en:'DR Congo',zh:'刚果(金)',q:2,color:'#5D4037'},
   Z:{id:'southafrica',en:'South Africa',zh:'南非',q:3,color:'#00897B'},
-  Q:{id:'saudi',en:'Saudi Arabia',zh:'沙特阿拉伯',q:4,color:'#78909C'},
+  0:{id:'ethiopia',en:'Ethiopia',zh:'埃塞俄比亚',q:2,color:'#795548'},
+  a:{id:'kenya',en:'Kenya',zh:'肯尼亚',q:2,color:'#4DB6AC'},
+  T:{id:'turkey',en:'Turkey',zh:'土耳其',q:3,color:'#8D6E63'},
+  Q:{id:'saudiarabia',en:'Saudi Arabia',zh:'沙特阿拉伯',q:4,color:'#78909C'},
+  b:{id:'iran',en:'Iran',zh:'伊朗',q:3,color:'#C0CA33'},
+  c:{id:'iraq',en:'Iraq',zh:'伊拉克',q:2,color:'#A1887F'},
+  R:{id:'russia',en:'Russia',zh:'俄罗斯',q:5,color:'#5C6BC0'},
   H:{id:'china',en:'China',zh:'中国',q:5,color:'#E53935'},
+  V:{id:'india',en:'India',zh:'印度',q:4,color:'#E84B3A'},
   J:{id:'japan',en:'Japan',zh:'日本',q:4,color:'#F06292'},
+  d:{id:'korea',en:'Korea',zh:'韩国',q:3,color:'#29B6F6'},
+  e:{id:'thailand',en:'Thailand',zh:'泰国',q:2,color:'#FFCA28'},
+  f:{id:'vietnam',en:'Vietnam',zh:'越南',q:2,color:'#66BB6A'},
+  g:{id:'mongolia',en:'Mongolia',zh:'蒙古',q:2,color:'#90A4AE'},
+  X:{id:'indonesia',en:'Indonesia',zh:'印度尼西亚',q:2,color:'#26C6DA'},
   W:{id:'australia',en:'Australia',zh:'澳大利亚',q:4,color:'#FF8A65'},
-  X:{id:'indonesia',en:'Indonesia',zh:'印度尼西亚',q:2,color:'#26C6DA'}
+  h:{id:'newzealand',en:'New Zealand',zh:'新西兰',q:2,color:'#81C784'},
 };
 
 // ===== TRANSLATIONS =====
@@ -452,7 +426,14 @@ function initGame() {
       if (hexes[key].owner === owner) hexes[key].troops = 50000;
     }
   }
-  setTroops(playerCountry);
+  // Set player hexes owner to 'player'
+  var pHexList = countryHexes[playerCountry];
+  if (pHexList) {
+    for (var pi = 0; pi < pHexList.length; pi++) {
+      hexes[pHexList[pi]].owner = 'player';
+      hexes[pHexList[pi]].troops = 50000;
+    }
+  }
   for (var a = 0; a < aiPlayers.length; a++) {
     for (var ci = 0; ci < aiPlayers[a].countries.length; ci++) {
       var code = aiPlayers[a].countries[ci];
