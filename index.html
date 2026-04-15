@@ -203,7 +203,7 @@ const LANG = {
     sendTroops:'派遣军队：',cancel:'取消',attackBtn:'⚔️ 进攻！',
     from:'出发地：',target:'目标：',victory:'🏆 胜利！',victoryMsg:'你征服了世界！',
     defeat:'💀 失败！',defeatMsg:'你的国家已被消灭。',
-    conquered:'征服了',lost:'失去了',recruited:'招募了',troopsIn名军队到',
+    conquered:'征服了',lost:'失去了',recruited:'招募了',troopsIn:'名军队到',
     built:'在...建造了工厂',fortified:'加固了',notEnoughGold:'金币不足！',
     selectSource:'请先选择出发领土',
     battleWon:'战斗胜利！',battleLost:'战斗失败！',
@@ -326,6 +326,10 @@ function setLang(l){
   document.getElementById('chooseLabel').textContent = T('choose');
   renderCountryGrid();
 }
+
+// Auto-render country grid on load
+renderCountryGrid();
+setLang('en');
 
 function renderCountryGrid(){
   let grid = document.getElementById('countryGrid');
