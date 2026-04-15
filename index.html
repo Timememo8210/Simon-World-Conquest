@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>World Conquest | 世界征服</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--panel:rgba(15,20,35,0.92);--accent:#4fc3f7;--gold:#ffd54f;--red:#ef5350;--green:#66bb6a;--purple:#ab47bc;--orange:#ff9800;--text:#e0e0e0;--textdim:#888;--border:rgba(255,255,255,0.08);--glass:rgba(20,28,50,0.85)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes slideIn{from{transform:translateY(-30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px var(--accent))}50%{filter:drop-shadow(0 0 12px var(--accent))}}
+@keyframes battleFlash{0%{fill-opacity:1}50%{fill-opacity:.4}100%{fill-opacity:1}}
+@keyframes countUp{from{transform:scale(1.15);color:#fff}to{transform:scale(1)}}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:60px 60px}}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--text);user-select:none}
+#startScreen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0e17 0%,#1a1a3e 50%,#0a0e17 100%);background-size:400% 400%;animation:gradientShift 8s ease infinite}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+#startScreen h1{font-size:3.5em;font-weight:800;background:linear-gradient(135deg,#4fc3f7,#ab47bc,#ff9800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;letter-spacing:2px}
+#startScreen .subtitle{font-size:1.3em;color:var(--textdim);margin-bottom:40px}
+.lang-btns{display:flex;gap:16px;margin-bottom:40px}
+.lang-btn{padding:12px 32px;border:2px solid var(--accent);background:transparent;color:var(--accent);border-radius:12px;font-size:1.1em;cursor:pointer;transition:all .3s}
+.lang-btn:hover{background:var(--accent);color:#000;transform:scale(1.05)}
+.country-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:900px;width:90%;max-height:55vh;overflow-y:auto;padding:8px}
+.country-grid::-webkit-scrollbar{width:6px}
+.country-grid::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+.country-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .3s;backdrop-filter:blur(10px)}
+.country-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,195,247,0.15)}
+.country-card h3{font-size:1em;margin-bottom:6px}
+.country-card .stars{color:var(--gold);font-size:.9em}
+.country-card .info{font-size:.75em;color:var(--textdim);margin-top:6px;line-height:1.5}
+#gameScreen{display:none;width:100%;height:100%;position:relative;background:var(--bg);overflow:hidden}
+#gameScreen::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(79,195,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,0.03) 1px,transparent 1px);background-size:60px 60px;animation:gridMove 20s linear infinite;pointer-events:none;z-index:0}
+#topBar{position:absolute;top:0;left:0;right:0;height:52px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:20px;z-index:10;backdrop-filter:blur(12px)}
+.stat{display:flex;align-items:center;gap:6px;font-size:.9em}
+.stat .icon{font-size:1.1em}
+.stat .val{font-weight:700;font-variant-numeric:tabular-nums}
+.stat.gold .val{color:var(--gold)}
+.stat.troops .val{color:var(--green)}
+.stat.territories .val{color:var(--accent)}
+#langToggle{margin-left:auto;padding:6px 14px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);border-radius:8px;cursor:pointer;font-size:.85em;transition:all .2s}
+#langToggle:hover{border-color:var(--accent);color:var(--accent)}
+#progressBar{position:absolute;top:52px;left:0;right:0;height:6px;background:rgba(255,255,255,0.05);z-index:10}
+#progressFill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .5s;border-radius:0 3px 3px 0}
+#mapContainer{position:absolute;top:58px;left:0;right:0;bottom:60px;overflow:hidden;z-index:1}
+#mapSvg{width:100%;height:100%}
+.country-path{stroke:rgba(255,255,255,0.25);stroke-width:1;cursor:pointer;transition:fill .6s,stroke .3s,filter .3s}
+.country-path:hover{stroke:rgba(255,255,255,0.6);stroke-width:1.5;filter:brightness(1.25)}
+.country-path.selected{stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 8px rgba(79,195,247,0.5)) brightness(1.15)}
+.country-path.attack-target{stroke:var(--red);stroke-width:2.5;filter:drop-shadow(0 0 8px rgba(239,83,80,0.5));animation:glow 1s infinite}
+.country-path.battling{animation:battleFlash .4s infinite}
+.country-label{font-size:7px;fill:rgba(255,255,255,0.75);pointer-events:none;text-anchor:middle;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+.troop-label{font-size:6px;fill:rgba(255,255,255,0.9);pointer-events:none;text-anchor:middle;font-weight:700}
+.factory-icon,.shield-icon{pointer-events:none;font-size:6px;text-anchor:middle}
+#sidebar{position:absolute;top:58px;right:0;width:280px;bottom:60px;background:var(--panel);border-left:1px solid var(--border);z-index:10;overflow-y:auto;padding:16px;display:none;backdrop-filter:blur(12px)}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+#sidebar.show{display:block}
+#sidebar h2{font-size:1.1em;margin-bottom:12px;color:var(--accent)}
+#sidebar .detail{font-size:.85em;line-height:1.8;color:var(--textdim)}
+#sidebar .detail span{color:var(--text);font-weight:600}
+#sidebar .actions{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.action-btn{padding:10px 16px;border:none;border-radius:8px;font-size:.85em;font-weight:600;cursor:pointer;transition:all .2s;color:#fff}
+.action-btn:hover{transform:scale(1.02);filter:brightness(1.15)}
+.action-btn.recruit{background:linear-gradient(135deg,#43a047,#66bb6a)}
+.action-btn.factory{background:linear-gradient(135deg,#f57c00,#ff9800)}
+.action-btn.fortify{background:linear-gradient(135deg,#5c6bc0,#7986cb)}
+.action-btn.attack{background:linear-gradient(135deg,#e53935,#ef5350)}
+.action-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;filter:none!important}
+#bottomBar{position:absolute;bottom:0;left:0;right:0;height:60px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:12px;padding:0 16px;z-index:10;backdrop-filter:blur(12px)}
+#bottomBar .action-btn{padding:8px 18px;font-size:.8em}
+#attackModal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+#attackModal.show{display:flex}
+.modal-content{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:28px;width:400px;max-width:90vw;backdrop-filter:blur(16px)}
+.modal-content h3{font-size:1.2em;margin-bottom:16px;color:var(--red)}
+.modal-content .field{margin-bottom:14px}
+.modal-content label{display:block;font-size:.8em;color:var(--textdim);margin-bottom:4px}
+.modal-content input[type=range]{width:100%;accent-color:var(--red)}
+.modal-content .troop-count{font-size:1.5em;font-weight:700;color:var(--gold);text-align:center;margin:8px 0}
+.modal-content .btn-row{display:flex;gap:10px;margin-top:16px}
+.modal-content .btn-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9em}
+.btn-cancel{background:rgba(255,255,255,0.1);color:var(--text)}
+.btn-confirm-attack{background:linear-gradient(135deg,#e53935,#ef5350);color:#fff}
+.btn-confirm-attack:hover{filter:brightness(1.15)}
+#notifications{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:400px;width:90%}
+.notif{padding:10px 18px;border-radius:10px;font-size:.85em;font-weight:500;animation:slideIn .3s;backdrop-filter:blur(10px);pointer-events:auto}
+.notif.battle{background:rgba(239,83,80,0.85);border:1px solid rgba(239,83,80,0.4)}
+.notif.success{background:rgba(102,187,106,0.85);border:1px solid rgba(102,187,106,0.4)}
+.notif.info{background:rgba(79,195,247,0.85);border:1px solid rgba(79,195,247,0.4);color:#000}
+.notif.warning{background:rgba(255,152,0,0.85);border:1px solid rgba(255,152,0,0.4)}
+#victoryScreen{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center}
+#victoryScreen.show{display:flex}
+#victoryScreen h1{font-size:3em;background:linear-gradient(135deg,var(--gold),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+#victoryScreen p{color:var(--textdim);margin-bottom:30px;font-size:1.1em}
+#victoryScreen button{padding:14px 40px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--green));color:#000;font-size:1.1em;font-weight:700;cursor:pointer}
+#particleCanvas{position:absolute;inset:0;pointer-events:none;z-index:5}
+</style>
+</head>
+<body>
+<!-- START SCREEN -->
+<div id="startScreen">
+  <h1>🌍 World Conquest</h1>
+  <div class="subtitle" id="startSubtitle">Real-Time Strategy</div>
+  <div class="lang-btns">
+    <button class="lang-btn" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('zh')">中文</button>
+  </div>
+  <div id="chooseLabel" style="color:var(--textdim);margin-bottom:12px;font-size:.95em">Choose your nation:</div>
+  <div class="country-grid" id="countryGrid"></div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen">
+  <div id="topBar">
+    <div class="stat gold"><span class="icon">💰</span><span class="val" id="goldVal">0</span></div>
+    <div class="stat"><span style="font-size:.7em;color:var(--textdim)" id="gpsLabel">(+0/s)</span></div>
+    <div class="stat troops"><span class="icon">⚔️</span><span class="val" id="troopVal">0</span></div>
+    <div class="stat territories"><span class="icon">🗺️</span><span class="val" id="terrVal">0/0</span></div>
+    <div class="stat"><span class="icon">⏱️</span><span class="val" id="timeVal">0:00</span></div>
+    <button id="langToggle" onclick="toggleLang()">🌐 EN</button>
+  </div>
+  <div id="progressBar"><div id="progressFill" style="width:0%"></div></div>
+  <div id="mapContainer">
+    <svg id="mapSvg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+    <canvas id="particleCanvas"></canvas>
+  </div>
+  <div id="sidebar">
+    <h2 id="sideTitle">Territory</h2>
+    <div class="detail" id="sideDetail"></div>
+    <div class="actions" id="sideActions"></div>
+  </div>
+  <div id="bottomBar"></div>
+</div>
+
+<!-- ATTACK MODAL -->
+<div id="attackModal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Attack!</h3>
+    <div class="field">
+      <label id="modalFromLabel">From:</label>
+      <div id="modalFrom" style="font-weight:600;margin-bottom:8px"></div>
+    </div>
+    <div class="field">
+      <label id="modalToLabel">Target:</label>
+      <div id="modalTo" style="font-weight:600;color:var(--red);margin-bottom:8px"></div>
+    </div>
+    <div class="field">
+      <label id="modalTroopsLabel">Troops to send:</label>
+      <input type="range" id="troopSlider" min="1000" max="100000" step="1000" value="50000" oninput="updateTroopSlider()">
+      <div class="troop-count" id="troopSliderVal">50,000</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" id="modalCancel" onclick="closeAttackModal()">Cancel</button>
+      <button class="btn-confirm-attack" id="modalConfirm" onclick="confirmAttack()">⚔️ Attack!</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div id="notifications"></div>
+
+<!-- VICTORY -->
+<div id="victoryScreen">
+  <h1 id="victoryTitle">🏆 Victory!</h1>
+  <p id="victoryMsg">You conquered the world!</p>
+  <button id="victoryBtn" onclick="location.reload()">Play Again</button>
+</div>
+
+<script>
+// ==================== GAME DATA ====================
+const LANG = {
+  en: {
+    subtitle:'Real-Time Strategy War Game',choose:'Choose your nation:',
+    goldPerSec:'Gold/sec',troops:'Troops',territories:'Territories',
+    quality:'Quality',income:'Income',fortification:'Fortification',
+    factories:'Factories',owner:'Owner',yourTerr:'Your Territory',
+    enemyTerr:'Enemy Territory',recruit:'Recruit Troops',buildFactory:'Build Factory (500g)',
+    buildFort:'Build Fortification (300g)',attack:'Attack From Here',close:'Close',
+    noAction:'No actions available',attackFrom:'Attack from here',
+    sendTroops:'Troops to send:',cancel:'Cancel',attackBtn:'⚔️ Attack!',
+    from:'From:',target:'Target:',victory:'🏆 Victory!',victoryMsg:'You have conquered the world!',
+    defeat:'💀 Defeat!',defeatMsg:'Your nation has been eliminated.',
+    conquered:'conquered',lost:'lost',recruited:'Recruited',troopsIn:'troops in',
+    built:'Built factory in',fortified:'Fortified',notEnoughGold:'Not enough gold!',
+    selectSource:'Select a territory to attack from first',
+    battleWon:'Battle won!',battleLost:'Battle lost!',
+    ownedBy:'Owned by',neutral:'Neutral',player:'You',
+    recruitCost:'Cost: {cost} gold for {num} troops',
+    time:'Time',you:'You',
+    aiNames:['Red Empire','Blue Kingdom','Green Republic'],
+    start:['Start','Choose your starting nation']
+  },
+  zh: {
+    subtitle:'实时战略战争游戏',choose:'选择你的国家：',
+    goldPerSec:'金币/秒',troops:'军队',territories:'领土',
+    quality:'品质',income:'收入',fortification:'防御工事',
+    factories:'工厂',owner:'所属',yourTerr:'己方领土',
+    enemyTerr:'敌方领土',recruit:'招募军队',buildFactory:'建造工厂 (500金)',
+    buildFort:'建造防御工事 (300金)',attack:'从此进攻',close:'关闭',
+    noAction:'无可用操作',attackFrom:'从此进攻',
+    sendTroops:'派遣军队：',cancel:'取消',attackBtn:'⚔️ 进攻！',
+    from:'出发地：',target:'目标：',victory:'🏆 胜利！',victoryMsg:'你征服了世界！',
+    defeat:'💀 失败！',defeatMsg:'你的国家已被消灭。',
+    conquered:'征服了',lost:'失去了',recruited:'招募了',troopsIn名军队到',
+    built:'在...建造了工厂',fortified:'加固了',notEnoughGold:'金币不足！',
+    selectSource:'请先选择出发领土',
+    battleWon:'战斗胜利！',battleLost:'战斗失败！',
+    ownedBy:'属于',neutral:'中立',player:'你',
+    recruitCost:'花费 {cost} 金招募 {num} 名军队',
+    time:'时间',you:'你',
+    aiNames:['红色帝国','蓝色王国','绿色共和国'],
+    start:['开始','选择你的起始国家']
+  }
+};
+
+// Simplified world map paths (Mercator-ish, viewBox 1000x500)
+const COUNTRIES = [
+  {id:'canada',en:'Canada',zh:'加拿大',q:3,path:'M40,60 L60,48 L110,42 L170,38 L230,42 L280,55 L290,75 L275,95 L250,108 L210,115 L170,110 L130,105 L90,100 L55,90 L40,75Z',adj:['usa'],tx:165,lx:165,ly:75},
+  {id:'usa',en:'USA',zh:'美国',q:5,path:'M55,100 L90,105 L130,110 L170,115 L210,120 L250,115 L275,108 L290,100 L295,115 L285,135 L265,150 L240,155 L210,160 L180,158 L150,155 L120,148 L90,140 L65,130 L55,115Z',adj:['canada','mexico'],tx:175,lx:175,ly:138},
+  {id:'mexico',en:'Mexico',zh:'墨西哥',q:3,path:'M90,145 L120,152 L150,158 L180,162 L195,168 L190,185 L175,195 L155,200 L135,195 L115,185 L100,175 L90,160Z',adj:['usa'],tx:145,lx:145,ly:178},
+  {id:'brazil',en:'Brazil',zh:'巴西',q:4,path:'M240,225 L270,215 L295,225 L310,250 L315,285 L305,320 L285,340 L260,345 L240,330 L230,300 L225,270 L230,245Z',adj:['argentina','colombia'],tx:270,lx:270,ly:280},
+  {id:'argentina',en:'Argentina',zh:'阿根廷',q:3,path:'M255,345 L285,348 L295,370 L290,400 L275,420 L260,415 L250,395 L248,370Z',adj:['brazil'],tx:270,lx:270,ly:385},
+  {id:'colombia',en:'Colombia',zh:'哥伦比亚',q:3,path:'M195,175 L215,168 L235,178 L240,200 L235,218 L220,225 L200,220 L190,200Z',adj:['mexico','brazil'],tx:215,lx:215,ly:198},
+  {id:'uk',en:'UK',zh:'英国',q:4,path:'M438,88 L445,80 L452,82 L455,95 L450,108 L443,110 L438,100Z',adj:['france','germany'],tx:446,lx:446,ly:95},
+  {id:'spain',en:'Spain',zh:'西班牙',q:3,path:'M415,128 L435,120 L455,122 L460,135 L455,148 L440,152 L420,148 L412,140Z',adj:['france'],tx:436,lx:436,ly:138},
+  {id:'france',en:'France',zh:'法国',q:4,path:'M440,108 L458,105 L468,115 L470,130 L460,140 L448,142 L438,138 L432,125 L435,115Z',adj:['uk','spain','germany','italy'],tx:452,lx:452,ly:125},
+  {id:'germany',en:'Germany',zh:'德国',q:5,path:'M460,95 L475,90 L490,95 L495,110 L488,122 L475,125 L462,120 L458,108Z',adj:['uk','france','italy','russia'],tx:477,lx:477,ly:110},
+  {id:'italy',en:'Italy',zh:'意大利',q:4,path:'M468,128 L478,122 L488,128 L490,142 L485,158 L478,165 L470,160 L465,148 L466,138Z',adj:['france','germany','turkey'],tx:478,lx:478,ly:148},
+  {id:'turkey',en:'Turkey',zh:'土耳其',q:3,path:'M500,130 L520,122 L545,125 L560,135 L555,150 L540,155 L520,152 L505,145Z',adj:['italy','russia','saudiarabia','egypt'],tx:530,lx:530,ly:140},
+  {id:'russia',en:'Russia',zh:'俄罗斯',q:5,path:'M495,42 L540,35 L600,30 L680,28 L760,35 L830,45 L870,60 L860,82 L830,100 L790,108 L740,110 L690,105 L640,100 L590,95 L540,92 L500,90 L495,75 L492,58Z',adj:['germany','turkey','china','japan'],tx:680,lx:680,ly:70},
+  {id:'egypt',en:'Egypt',zh:'埃及',q:3,path:'M510,158 L530,155 L545,165 L548,185 L540,200 L525,205 L510,198 L505,178Z',adj:['turkey','saudiarabia'],tx:528,lx:528,ly:182},
+  {id:'saudiarabia',en:'Saudi Arabia',zh:'沙特阿拉伯',q:4,path:'M540,170 L565,158 L585,165 L590,185 L580,208 L560,215 L545,205 L540,190Z',adj:['turkey','egypt','india'],tx:565,lx:565,ly:190},
+  {id:'india',en:'India',zh:'印度',q:4,path:'M620,140 L645,130 L665,140 L672,165 L665,195 L650,215 L635,218 L620,205 L615,175Z',adj:['russia','china','saudiarabia'],tx:643,lx:643,ly:178},
+  {id:'china',en:'China',zh:'中国',q:5,path:'M690,65 L730,58 L770,62 L800,72 L810,90 L805,110 L790,125 L760,132 L730,130 L700,122 L685,108 L682,88Z',adj:['russia','japan','india','indonesia'],tx:745,lx:745,ly:95},
+  {id:'japan',en:'Japan',zh:'日本',q:4,path:'M830,75 L840,68 L850,72 L855,88 L848,105 L838,110 L830,100 L828,88Z',adj:['russia','china'],tx:842,lx:842,ly:90},
+  {id:'indonesia',en:'Indonesia',zh:'印尼',q:3,path:'M720,210 L750,202 L790,205 L820,212 L830,225 L815,238 L785,242 L755,238 L730,228Z',adj:['china','australia'],tx:775,lx:775,ly:222},
+  {id:'australia',en:'Australia',zh:'澳大利亚',q:3,path:'M760,295 L800,280 L845,285 L870,305 L865,340 L845,365 L810,370 L775,360 L758,335 L755,310Z',adj:['indonesia'],tx:810,lx:810,ly:330},
+  {id:'southafrica',en:'South Africa',zh:'南非',q:3,path:'M510,330 L535,320 L555,328 L560,355 L550,380 L535,390 L515,385 L505,365 L505,345Z',adj:['egypt'],tx:533,lx:533,ly:358},
+  {id:'nigeria',en:'Nigeria',zh:'尼日利亚',q:3,path:'M455,215 L475,208 L495,215 L500,235 L492,250 L478,255 L462,248 L455,232Z',adj:['egypt'],tx:478,lx:478,ly:232},
+  {id:'iran',en:'Iran',zh:'伊朗',q:3,path:'M575,120 L595,112 L615,118 L620,135 L612,148 L595,152 L578,145 L572,132Z',adj:['russia','india','saudiarabia','turkey'],tx:596,lx:596,ly:133},
+  {id:'mongolia',en:'Mongolia',zh:'蒙古',q:2,path:'M740,55 L770,50 L800,55 L810,68 L800,78 L775,82 L750,78 L740,68Z',adj:['russia','china'],tx:775,lx:775,ly:66},
+  {id:'korea',en:'South Korea',zh:'韩国',q:3,path:'M810,88 L820,82 L828,88 L825,102 L818,108 L810,100Z',adj:['china','japan'],tx:818,lx:818,ly:95},
+  {id:'poland',en:'Poland',zh:'波兰',q:3,path:'M485,85 L498,80 L510,85 L512,98 L505,108 L492,110 L485,100Z',adj:['germany','russia'],tx:498,lx:498,ly:95},
+  {id:'ukraine',en:'Ukraine',zh:'乌克兰',q:3,path:'M512,88 L530,82 L548,88 L552,102 L542,112 L525,115 L512,108Z',adj:['poland','russia','turkey'],tx:530,lx:530,ly:100},
+  {id:'pakistan',en:'Pakistan',zh:'巴基斯坦',q:2,path:'M600,128 L618,122 L630,130 L628,145 L618,152 L604,148 L598,138Z',adj:['iran','india','russia'],tx:615,lx:615,ly:138},
+  {id:'thailand',en:'Thailand',zh:'泰国',q:2,path:'M690,175 L705,168 L718,175 L715,195 L705,205 L692,200 L688,188Z',adj:['china','india','indonesia'],tx:702,lx:702,ly:188},
+  {id:'peru',en:'Peru',zh:'秘鲁',q:2,path:'M210,225 L230,218 L240,235 L235,260 L225,275 L210,270 L205,250Z',adj:['colombia','brazil','argentina'],tx:222,lx:222,ly:248},
+  {id:'algeria',en:'Algeria',zh:'阿尔及利亚',q:3,path:'M425,155 L450,148 L468,155 L472,172 L465,185 L448,190 L430,185 L422,170Z',adj:['spain','france','nigeria','egypt'],tx:448,lx:448,ly:170}
+];
+
+const PLAYER_COLORS = {
+  player:'#4fc3f7',
+  ai0:'#ef5350',
+  ai1:'#ab47bc',
+  ai2:'#66bb6a',
+  neutral:'#455a64'
+};
+
+const AI_OWNERS = ['ai0','ai1','ai2'];
+
+// ==================== GAME STATE ====================
+let lang = 'en';
+let gameStarted = false;
+let selectedTerritory = null;
+let attackSource = null;
+let gold = 500;
+let totalTroops = 0;
+let elapsedTime = 0;
+let lastTick = 0;
+let territories = {};
+let playerOwner = 'player';
+let gameInterval = null;
+let aiTimers = [];
+let particles = [];
+let playerEliminated = false;
+
+function T(key){ return LANG[lang][key] || key; }
+
+function initTerritories(){
+  territories = {};
+  COUNTRIES.forEach(c => {
+    territories[c.id] = {
+      id: c.id,
+      owner: 'neutral',
+      troops: 5000 + Math.floor(Math.random()*5000),
+      gold: 100,
+      quality: c.q,
+      factories: 0,
+      fortification: 0,
+      adj: c.adj,
+      path: c.path,
+      tx: c.tx,
+      lx: c.lx,
+      ly: c.ly,
+      name: {en:c.en, zh:c.zh},
+      battling: false,
+      battleTimer: 0
+    };
+  });
+}
+
+function distributeCountries(playerId){
+  let ids = COUNTRIES.map(c=>c.id);
+  // shuffle
+  for(let i=ids.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]; }
+  let owners = [playerId, ...AI_OWNERS];
+  let perOwner = Math.floor(ids.length / owners.length);
+  owners.forEach((owner,idx) => {
+    for(let i=0;i<perOwner;i++){
+      let tid = ids[idx*perOwner+i];
+      territories[tid].owner = owner;
+      territories[tid].troops = 10000 + Math.floor(Math.random()*20000);
+      territories[tid].factories = 0;
+      territories[tid].fortification = 0;
+    }
+  });
+  // remaining go neutral
+}
+
+// ==================== START SCREEN ====================
+function setLang(l){
+  lang = l;
+  document.getElementById('startSubtitle').textContent = T('subtitle');
+  document.getElementById('chooseLabel').textContent = T('choose');
+  renderCountryGrid();
+}
+
+function renderCountryGrid(){
+  let grid = document.getElementById('countryGrid');
+  grid.innerHTML = '';
+  COUNTRIES.forEach(c => {
+    let card = document.createElement('div');
+    card.className = 'country-card';
+    card.innerHTML = `<h3>${c[lang]||c.en}</h3>
+      <div class="stars">${'★'.repeat(c.q)}${'☆'.repeat(5-c.q)}</div>
+      <div class="info">${T('quality')}: ${c.q}/5</div>`;
+    card.onclick = () => startGame(c.id);
+    grid.appendChild(card);
+  });
+}
+
+// ==================== MAP RENDERING ====================
+function renderMap(){
+  let svg = document.getElementById('mapSvg');
+  svg.innerHTML = '';
+  // ocean bg
+  let bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width','1000');
+  bg.setAttribute('height','500');
+  bg.setAttribute('fill','#0d1b2a');
+  svg.appendChild(bg);
+
+  COUNTRIES.forEach(c => {
+    let t = territories[c.id];
+    // path
+    let path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', c.path);
+    path.setAttribute('fill', getOwnerColor(t.owner));
+    path.setAttribute('id', 'path-'+c.id);
+    path.setAttribute('class', 'country-path');
+    if(selectedTerritory === c.id) path.classList.add('selected');
+    if(t.battling) path.classList.add('battling');
+    path.onclick = () => onTerritoryClick(c.id);
+    svg.appendChild(path);
+
+    // label
+    let label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', c.lx);
+    label.setAttribute('y', c.ly - 4);
+    label.setAttribute('class','country-label');
+    label.textContent = c[lang]||c.en;
+    svg.appendChild(label);
+
+    // troop count
+    let tl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    tl.setAttribute('x', c.lx);
+    tl.setAttribute('y', c.ly + 8);
+    tl.setAttribute('class','troop-label');
+    tl.textContent = formatNum(t.troops);
+    svg.appendChild(tl);
+
+    // factory icons
+    if(t.factories > 0){
+      let fi = document.createElementNS('http://www.w3.org/2000/svg','text');
+      fi.setAttribute('x', c.lx - 12);
+      fi.setAttribute('y', c.ly + 18);
+      fi.setAttribute('class','factory-icon');
+      fi.textContent = '🏭'.repeat(Math.min(t.factories,3));
+      svg.appendChild(fi);
+    }
+
+    // fortification shield
+    if(t.fortification > 0){
+      let si = document.createElementNS('http://www.w3.org/2000/svg','text');
+      si.setAttribute('x', c.lx + 10);
+      si.setAttribute('y', c.ly + 18);
+      si.setAttribute('class','shield-icon');
+      si.textContent = '🛡'+t.fortification;
+      svg.appendChild(si);
+    }
+  });
+}
+
+function getOwnerColor(owner){
+  return PLAYER_COLORS[owner] || PLAYER_COLORS.neutral;
+}
+
+function formatNum(n){
+  if(n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if(n >= 1000) return (n/1000).toFixed(0)+'K';
+  return n.toString();
+}
+
+function updateMap(){
+  COUNTRIES.forEach(c => {
+    let t = territories[c.id];
+    let path = document.getElementById('path-'+c.id);
+    if(path){
+      path.setAttribute('fill', getOwnerColor(t.owner));
+      path.classList.toggle('selected', selectedTerritory === c.id);
+      path.classList.toggle('battling', t.battling);
+    }
+    // Update troop label
+    let texts = document.querySelectorAll('.troop-label');
+    let idx = COUNTRIES.findIndex(cc=>cc.id===c.id);
+    if(texts[idx]) texts[idx].textContent = formatNum(t.troops);
+  });
+  updateStats();
+}
+
+// ==================== GAME START ====================
+function startGame(playerTerritoryId){
+  initTerritories();
+  territories[playerTerritoryId].owner = playerOwner;
+  territories[playerTerritoryId].troops = 50000;
+  territories[playerTerritoryId].factories = 1;
+  
+  // Distribute remaining to AIs
+  let remaining = COUNTRIES.filter(c=>c.id!==playerTerritoryId).map(c=>c.id);
+  for(let i=remaining.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[remaining[i],remaining[j]]=[remaining[j],remaining[i]];}
+  let perAI = Math.floor(remaining.length/3);
+  AI_OWNERS.forEach((ai,idx)=>{
+    for(let i=0;i<perAI;i++){
+      let tid = remaining[idx*perAI+i];
+      territories[tid].owner = ai;
+      territories[tid].troops = 15000 + Math.floor(Math.random()*25000);
+    }
+  });
+
+  gold = 1000;
+  elapsedTime = 0;
+  playerEliminated = false;
+  
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('gameScreen').style.display='block';
+  
+  gameStarted = true;
+  lastTick = performance.now();
+  
+  renderMap();
+  resizeParticleCanvas();
+  
+  gameInterval = setInterval(gameTick, 100);
+  // AI ticks at different rates
+  aiTimers.push(setInterval(()=>aiTick('ai0'),2500));
+  aiTimers.push(setInterval(()=>aiTick('ai1'),3000));
+  aiTimers.push(setInterval(()=>aiTick('ai2'),3500));
+  
+  requestAnimationFrame(gameLoop);
+  notify(T('subtitle'),'info');
+  updateStats();
+}
+
+// ==================== GAME TICK (economy) ====================
+function gameTick(){
+  if(!gameStarted || playerEliminated) return;
+  let now = performance.now();
+  let dt = (now - lastTick) / 1000;
+  lastTick = now;
+  
+  elapsedTime += dt;
+  
+  // Gold income
+  let gps = 0;
+  Object.values(territories).forEach(t => {
+    if(t.owner === playerOwner){
+      let income = t.quality * 2 + t.factories * 5;
+      gps += income;
+    }
+    // AI income
+    if(AI_OWNERS.includes(t.owner)){
+      let income = t.quality * 2 + t.factories * 5;
+      t.gold = (t.gold||0) + income * dt;
+    }
+    // Battle resolution
+    if(t.battling){
+      t.battleTimer -= dt;
+      if(t.battleTimer <= 0) t.battling = false;
+    }
+  });
+  
+  gold += gps * dt;
+  
+  // Check victory
+  checkVictory();
+}
+
+// ==================== STATS UPDATE ====================
+function updateStats(){
+  let playerTerrs = 0;
+  let playerTroops = 0;
+  let total = COUNTRIES.length;
+  
+  Object.values(territories).forEach(t=>{
+    if(t.owner === playerOwner){
+      playerTerrs++;
+      playerTroops += t.troops;
+    }
+  });
+  
+  totalTroops = playerTroops;
+  
+  let gps = 0;
+  Object.values(territories).forEach(t=>{
+    if(t.owner === playerOwner) gps += t.quality*2 + t.factories*5;
+  });
+  
+  document.getElementById('goldVal').textContent = formatNum(Math.floor(gold));
+  document.getElementById('gpsLabel').textContent = `(+${gps.toFixed(0)}/s)`;
+  document.getElementById('troopVal').textContent = formatNum(totalTroops);
+  document.getElementById('terrVal').textContent = `${playerTerrs}/${total}`;
+  
+  let mins = Math.floor(elapsedTime/60);
+  let secs = Math.floor(elapsedTime%60);
+  document.getElementById('timeVal').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+  
+  let pct = (playerTerrs/total)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  
+  document.getElementById('langToggle').textContent = '🌐 '+(lang==='en'?'EN':'中文');
+  
+  updateSidebar();
+}
+
+// ==================== TERRITORY INTERACTION ====================
+function onTerritoryClick(id){
+  let t = territories[id];
+  
+  if(t.owner === playerOwner){
+    selectedTerritory = id;
+    attackSource = id;
+    updateSidebar();
+    updateMap();
+  } else {
+    // Enemy territory - can we attack?
+    if(attackSource && territories[attackSource].adj.includes(id)){
+      selectedTerritory = id;
+      openAttackModal(attackSource, id);
+    } else {
+      selectedTerritory = id;
+      updateSidebar();
+      updateMap();
+    }
+  }
+}
+
+function updateSidebar(){
+  let sb = document.getElementById('sidebar');
+  if(!selectedTerritory){ sb.classList.remove('show'); return; }
+  
+  sb.classList.add('show');
+  let t = territories[selectedTerritory];
+  let c = COUNTRIES.find(cc=>cc.id===selectedTerritory);
+  
+  document.getElementById('sideTitle').textContent = t.name[lang]||t.name.en;
+  
+  let ownerName = t.owner === playerOwner ? T('you') :
+    (AI_OWNERS.includes(t.owner) ? T('aiNames')[AI_OWNERS.indexOf(t.owner)] : T('neutral'));
+  
+  let html = `
+    <div>${T('owner')}: <span style="color:${getOwnerColor(t.owner)}">${ownerName}</span></div>
+    <div>${T('troops')}: <span>${formatNum(t.troops)}</span></div>
+    <div>${T('quality')}: <span>${'★'.repeat(t.quality)}${'☆'.repeat(5-t.quality)}</span></div>
+    <div>${T('income')}: <span>${(t.quality*2 + t.factories*5)}/s</span></div>
+    <div>${T('factories')}: <span>${t.factories}/3</span></div>
+    <div>${T('fortification')}: <span>${t.fortification}/5</span></div>
+  `;
+  document.getElementById('sideDetail').innerHTML = html;
+  
+  let actions = document.getElementById('sideActions');
+  actions.innerHTML = '';
+  
+  if(t.owner === playerOwner){
+    // Recruit
+    let recruitCost = 100;
+    let recruitNum = 1000;
+    let rb = document.createElement('button');
+    rb.className = 'action-btn recruit';
+    rb.textContent = T('recruit') + ` (100g→1K)`;
+    rb.disabled = gold < recruitCost;
+    rb.onclick = () => doRecruit(selectedTerritory);
+    actions.appendChild(rb);
+    
+    // Factory
+    if(t.factories < 3){
+      let fb = document.createElement('button');
+      fb.className = 'action-btn factory';
+      fb.textContent = T('buildFactory');
+      fb.disabled = gold < 500;
+      fb.onclick = () => doBuildFactory(selectedTerritory);
+      actions.appendChild(fb);
+    }
+    
+    // Fortification
+    if(t.fortification < 5){
+      let ftb = document.createElement('button');
+      ftb.className = 'action-btn fortify';
+      ftb.textContent = T('buildFort');
+      ftb.disabled = gold < 300;
+      ftb.onclick = () => doBuildFort(selectedTerritory);
+      actions.appendChild(ftb);
+    }
+    
+    // Attack button (if has adjacent enemies)
+    let hasTarget = t.adj.some(aid => territories[aid].owner !== playerOwner);
+    if(hasTarget && t.troops > 1000){
+      // show adjacent enemies as clickable
+      let enemies = t.adj.filter(aid => territories[aid].owner !== playerOwner);
+      enemies.forEach(eid => {
+        let et = territories[eid];
+        let ab = document.createElement('button');
+        ab.className = 'action-btn attack';
+        ab.textContent = `⚔️ ${T('attack')} → ${et.name[lang]||et.name.en} (${formatNum(et.troops)})`;
+        ab.onclick = () => { selectedTerritory= eid; openAttackModal(selectedTerritory, eid); };
+        // Fix: attackSource should be the owned territory
+        ab.onclick = () => { selectedTerritory=eid; openAttackModal(t.id, eid); };
+        actions.appendChild(ab);
+      });
+    }
+  }
+}
+
+// ==================== ACTIONS ====================
+function doRecruit(tid){
+  if(gold < 100) return;
+  let cost = Math.min(Math.floor(gold), Math.floor(gold/100)*100);
+  if(cost < 100) return;
+  let numTroops = cost * 10;
+  gold -= cost;
+  territories[tid].troops += numTroops;
+  notify(`${T('recruited')} ${formatNum(numTroops)} ${lang==='zh'?'名军队到':'troops in'} ${territories[tid].name[lang]}`,'success');
+  renderMap();
+}
+
+function doBuildFactory(tid){
+  if(gold < 500) return;
+  if(territories[tid].factories >= 3) return;
+  gold -= 500;
+  territories[tid].factories++;
+  notify(`${T('built')} ${territories[tid].name[lang]}`,'info');
+  renderMap();
+}
+
+function doBuildFort(tid){
+  if(gold < 300) return;
+  if(territories[tid].fortification >= 5) return;
+  gold -= 300;
+  territories[tid].fortification++;
+  notify(`${T('fortified')} ${territories[tid].name[lang]}`,'info');
+  renderMap();
+}
+
+// ==================== COMBAT ====================
+function openAttackModal(fromId, toId){
+  let ft = territories[fromId];
+  let tt = territories[toId];
+  let modal = document.getElementById('attackModal');
+  modal.classList.add('show');
+  
+  document.getElementById('modalFrom').textContent = ft.name[lang] + ` (${formatNum(ft.troops)})`;
+  document.getElementById('modalTo').textContent = tt.name[lang] + ` (${formatNum(tt.troops)}, ${T('fortification')}: ${tt.fortification})`;
+  
+  let slider = document.getElementById('troopSlider');
+  slider.min = 1000;
+  slider.max = ft.troops - 1000;
+  slider.value = Math.floor(ft.troops * 0.5);
+  slider.step = Math.max(1000, Math.floor(ft.troops/100));
+  
+  updateTroopSlider();
+  
+  // Store attack info
+  modal.dataset.from = fromId;
+  modal.dataset.to = toId;
+}
+
+function updateTroopSlider(){
+  let v = parseInt(document.getElementById('troopSlider').value);
+  document.getElementById('troopSliderVal').textContent = formatNum(v);
+}
+
+function closeAttackModal(){
+  document.getElementById('attackModal').classList.remove('show');
+}
+
+function confirmAttack(){
+  let modal = document.getElementById('attackModal');
+  let fromId = modal.dataset.from;
+  let toId = modal.dataset.to;
+  let sendTroops = parseInt(document.getElementById('troopSlider').value);
+  
+  closeAttackModal();
+  
+  let ft = territories[fromId];
+  let tt = territories[toId];
+  
+  if(ft.troops < sendTroops + 1000) return;
+  if(ft.owner !== playerOwner) return;
+  if(tt.owner === playerOwner) return;
+  
+  // Remove troops from source
+  ft.troops -= sendTroops;
+  
+  // Calculate battle
+  let atkPower = sendTroops * (1 + Math.random()*0.3 - 0.15);
+  let defBonus = 1 + (tt.fortification * 0.2);
+  let defPower = tt.troops * defBonus * (1 + Math.random()*0.3 - 0.15);
+  
+  // Mark battling
+  tt.battling = true;
+  tt.battleTimer = 2;
+  
+  // Spawn particles at target
+  spawnBattleParticles(tt.tx, tt.ly);
+  
+  setTimeout(()=>{
+    if(atkPower > defPower){
+      // Attacker wins
+      let surviving = Math.floor(sendTroops * (defPower / atkPower) * 0.7);
+      surviving = Math.max(surviving, 1000);
+      let oldOwner = tt.owner;
+      tt.owner = playerOwner;
+      tt.troops = surviving;
+      tt.fortification = Math.max(0, tt.fortification - 2);
+      notify(`${T('battleWon')} ${tt.name[lang]} ${T('conquered')}! (${formatNum(surviving)} ${T('troops').toLowerCase()})`,'success');
+    } else {
+      // Defender wins
+      let surviving = Math.floor(tt.troops * (atkPower / defPower) * 0.7);
+      surviving = Math.max(surviving, 500);
+      tt.troops = surviving;
+      notify(`${T('battleLost')} ${tt.name[lang]} (${formatNum(surviving)} ${T('troops').toLowerCase()} remain)`,'battle');
+    }
+    tt.battling = false;
+    renderMap();
+  }, 1500);
+  
+  renderMap();
+}
+
+// ==================== AI ====================
+function aiTick(aiOwner){
+  if(!gameStarted) return;
+  let myTerrs = Object.values(territories).filter(t=>t.owner===aiOwner);
+  if(myTerrs.length === 0) return;
+  
+  let totalGold = myTerrs.reduce((s,t)=>s+(t.gold||0),0);
+  let totalIncome = myTerrs.reduce((s,t)=>s+(t.quality*2+(t.factories||0)*5),0);
+  let myGold = totalIncome * 2.5; // AI earns per tick
+  let budget = myGold + totalGold;
+  
+  // AI Decision making
+  let action = Math.random();
+  
+  if(action < 0.4 && budget > 200){
+    // Recruit troops on weakest border territory
+    let borderTerrs = myTerrs.filter(t => t.adj.some(a=>territories[a].owner!==aiOwner));
+    if(borderTerrs.length > 0){
+      let target = borderTerrs.reduce((a,b)=>a.troops<b.troops?a:b);
+      let recruitAmount = Math.min(Math.floor(budget/2)*10, 50000);
+      if(recruitAmount > 1000){
+        target.troops += recruitAmount;
+        budget -= Math.floor(budget/2);
+      }
+    }
+  } else if(action < 0.6 && budget > 500){
+    // Build factory on best territory without max factories
+    let best = myTerrs.filter(t=>t.factories<3).sort((a,b)=>b.quality-a.quality);
+    if(best.length>0){
+      best[0].factories++;
+      budget -= 500;
+    }
+  } else if(action < 0.75 && budget > 300){
+    // Build fortification on border territory
+    let borderTerrs = myTerrs.filter(t => t.adj.some(a=>territories[a].owner!==aiOwner) && t.fortification<5);
+    if(borderTerrs.length > 0){
+      let target = borderTerrs.reduce((a,b)=>a.fortification<b.fortification?a:b);
+      target.fortification++;
+      budget -= 300;
+    }
+  } else {
+    // Attack weakest neighbor
+    let borderTerrs = myTerrs.filter(t => t.troops > 15000 && t.adj.some(a=>territories[a].owner!==aiOwner && territories[a].owner!=='neutral'));
+    if(borderTerrs.length > 0){
+      let attacker = borderTerrs.reduce((a,b)=>a.troops>b.troops?a:b);
+      let targets = attacker.adj.map(aid=>territories[aid]).filter(t=>t.owner!==aiOwner && t.owner!=='neutral');
+      if(targets.length > 0){
+        let target = targets.reduce((a,b)=>a.troops<b.troops?a:b);
+        let sendTroops = Math.floor(attacker.troops * (0.4 + Math.random()*0.3));
+        
+        if(sendTroops > 3000 && attacker.troops - sendTroops > 2000){
+          attacker.troops -= sendTroops;
+          
+          let atkPower = sendTroops * (1 + Math.random()*0.3 - 0.15);
+          let defBonus = 1 + (target.fortification * 0.2);
+          let defPower = target.troops * defBonus * (1 + Math.random()*0.3 - 0.15);
+          
+          target.battling = true;
+          target.battleTimer = 2;
+          spawnBattleParticles(target.tx, target.ly);
+          
+          let aiName = T('aiNames')[AI_OWNERS.indexOf(aiOwner)];
+          
+          setTimeout(()=>{
+            if(atkPower > defPower){
+              let surviving = Math.floor(sendTroops * (defPower/atkPower) * 0.7);
+              surviving = Math.max(surviving, 1000);
+              let oldOwner = target.owner;
+              target.owner = aiOwner;
+              target.troops = surviving;
+              target.fortification = Math.max(0, target.fortification - 1);
+              
+              if(oldOwner === playerOwner){
+                notify(`${aiName} ${T('conquered')} ${target.name[lang]}!`,'warning');
+              }
+            } else {
+              target.troops = Math.max(500, Math.floor(target.troops * (atkPower/defPower) * 0.7));
+            }
+            target.battling = false;
+            renderMap();
+          }, 1500);
+          
+          renderMap();
+        }
+      }
+    }
+    
+    // Also try neutral territories
+    let neutralAttackers = myTerrs.filter(t => t.troops > 20000 && t.adj.some(a=>territories[a].owner==='neutral'));
+    if(neutralAttackers.length > 0 && Math.random() < 0.3){
+      let atk = neutralAttackers[0];
+      let neutrals = atk.adj.map(aid=>territories[aid]).filter(t=>t.owner==='neutral');
+      if(neutrals.length > 0){
+        let target = neutrals[0];
+        let send = Math.floor(atk.troops * 0.3);
+        atk.troops -= send;
+        target.battling = true;
+        target.battleTimer = 1.5;
+        spawnBattleParticles(target.tx, target.ly);
+        setTimeout(()=>{
+          let atkP = send*(1+Math.random()*0.2-0.1);
+          let defP = target.troops*(1+Math.random()*0.2-0.1);
+          if(atkP > defP){
+            target.owner = aiOwner;
+            target.troops = Math.floor(send*0.7);
+            let aiName = T('aiNames')[AI_OWNERS.indexOf(aiOwner)];
+            notify(`${aiName} ${T('conquered')} ${target.name[lang]}`,'info');
+          } else {
+            target.troops = Math.floor(target.troops*0.6);
+          }
+          target.battling = false;
+          renderMap();
+        },1000);
+        renderMap();
+      }
+    }
+  }
+  
+  // Save remaining budget to territory gold pool
+  if(budget > 0){
+    myTerrs[0].gold = (myTerrs[0].gold||0) + budget * 0.3;
+  }
+}
+
+// ==================== PARTICLES ====================
+function resizeParticleCanvas(){
+  let canvas = document.getElementById('particleCanvas');
+  let container = document.getElementById('mapContainer');
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+}
+
+function spawnBattleParticles(mapX, mapY){
+  let svg = document.getElementById('mapSvg');
+  let container = document.getElementById('mapContainer');
+  let svgRect = svg.getBoundingClientRect();
+  
+  // Convert SVG coords to screen coords
+  let scaleX = svgRect.width / 1000;
+  let scaleY = svgRect.height / 500;
+  let sx = mapX * scaleX + svgRect.left - container.getBoundingClientRect().left;
+  let sy = mapY * scaleY + svgRect.top - container.getBoundingClientRect().top;
+  
+  for(let i=0;i<25;i++){
+    particles.push({
+      x: sx,
+      y: sy,
+      vx: (Math.random()-0.5)*8,
+      vy: (Math.random()-0.5)*8,
+      life: 1,
+      decay: 0.01 + Math.random()*0.02,
+      size: 2 + Math.random()*4,
+      color: ['#ff4444','#ff8800','#ffcc00','#ffffff'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+function drawParticles(){
+  let canvas = document.getElementById('particleCanvas');
+  let ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  for(let i=particles.length-1;i>=0;i--){
+    let p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= p.decay;
+    p.vx *= 0.98;
+    p.vy *= 0.98;
+    
+    if(p.life <= 0){
+      particles.splice(i,1);
+      continue;
+    }
+    
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Glow effect
+    ctx.globalAlpha = p.life * 0.3;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life * 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ==================== GAME LOOP ====================
+function gameLoop(){
+  if(!gameStarted) return;
+  drawParticles();
+  updateStats();
+  requestAnimationFrame(gameLoop);
+}
+
+// ==================== VICTORY CHECK ====================
+function checkVictory(){
+  let total = COUNTRIES.length;
+  let counts = {};
+  Object.values(territories).forEach(t=>{
+    counts[t.owner] = (counts[t.owner]||0)+1;
+  });
+  
+  let playerCount = counts[playerOwner]||0;
+  
+  if(playerCount >= total * 0.5){
+    victory();
+  }
+  
+  // Check if player eliminated
+  if(playerCount === 0 && !playerEliminated){
+    playerEliminated = true;
+    defeat();
+  }
+  
+  // Check if all AIs eliminated
+  let aisAlive = AI_OWNERS.filter(ai=>(counts[ai]||0)>0).length;
+  if(aisAlive === 0 && playerCount > 0){
+    victory();
+  }
+}
+
+function victory(){
+  gameStarted = false;
+  clearInterval(gameInterval);
+  aiTimers.forEach(clearInterval);
+  document.getElementById('victoryTitle').textContent = T('victory');
+  document.getElementById('victoryMsg').textContent = T('victoryMsg');
+  document.getElementById('victoryBtn').textContent = lang==='zh'?'再来一局':'Play Again';
+  document.getElementById('victoryScreen').classList.add('show');
+}
+
+function defeat(){
+  gameStarted = false;
+  clearInterval(gameInterval);
+  aiTimers.forEach(clearInterval);
+  document.getElementById('victoryTitle').textContent = T('defeat');
+  document.getElementById('victoryMsg').textContent = T('defeatMsg');
+  document.getElementById('victoryBtn').textContent = lang==='zh'?'再来一局':'Play Again';
+  document.getElementById('victoryScreen').classList.add('show');
+}
+
+// ==================== NOTIFICATIONS ====================
+function notify(msg, type='info'){
+  let container = document.getElementById('notifications');
+  let el = document.createElement('div');
+  el.className = 'notif '+type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .5s'; setTimeout(()=>el.remove(),500); }, 3500);
+}
+
+// ==================== LANGUAGE TOGGLE ====================
+function toggleLang(){
+  lang = lang==='en'?'zh':'en';
+  document.getElementById('langToggle').textContent = '🌐 '+(lang==='en'?'EN':'中文');
+  renderMap();
+}
+
+// ==================== INIT ====================
+window.addEventListener('resize', ()=>{
+  if(gameStarted) resizeParticleCanvas();
+});
+
+// Init start screen
+setLang('en');
+</script>
+</body>
+</html>
