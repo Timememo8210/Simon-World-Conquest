@@ -39,7 +39,12 @@ canvas:active{cursor:grabbing}
 .btn-fort{background:linear-gradient(135deg,#1e88e5,#0d47a1)}
 .btn-move{background:linear-gradient(135deg,#8e24aa,#4a148c)}
 .btn-attack{background:linear-gradient(135deg,#e53935,#b71c1c)}
+.btn-navy{background:linear-gradient(135deg,#0277bd,#01579b)}
 .btn-cancel{background:#555}
+.diff-easy{color:#4CAF50;font-size:.75em}
+.diff-medium{color:#FFC107;font-size:.75em}
+.diff-hard{color:#F44336;font-size:.75em}
+.island-badge{color:#4FC3F7;font-size:.75em}
 .slider-row{display:flex;align-items:center;gap:8px;margin:6px 0}
 .slider-row input[type=range]{flex:1;accent-color:#ffd200}
 .slider-row .val{min-width:50px;text-align:right;font-size:.9em}
@@ -243,7 +248,10 @@ var TR = {
     notEnoughGold:'Not enough gold!',maxFact:'Max factories!',maxForts:'Max forts!',
     you:'You',aiRed:'Red AI',aiTeal:'Teal AI',aiGold:'Gold AI',
     moveSelect:'Click destination hex',attackSelect:'Click enemy hex',
-    yourTurn:'Select a hex to begin'
+    navy:'⚓ Navy Attack',navySelect:'Click any enemy hex (naval)',navyCost:'Naval: 2x troop cost',
+    yourTurn:'Select a hex to begin',
+    islandBadge:'⚓ Island',islandTip:'Navy required to attack',
+    diffEasy:'Easy Start',diffMedium:'Medium',diffHard:'Hard Start'
   },
   cn:{
     titleSub:'征服世界，一步一格',
@@ -262,7 +270,10 @@ var TR = {
     notEnoughGold:'金币不足！',maxFact:'工厂已满！',maxForts:'防御已满！',
     you:'你',aiRed:'红军AI',aiTeal:'青军AI',aiGold:'金军AI',
     moveSelect:'点击目标格',attackSelect:'点击敌方格',
-    yourTurn:'选择一个格子开始'
+    navy:'⚓ 海军进攻',navySelect:'点击任何敌方格子（海运）',navyCost:'海运：双倍兵力消耗',
+    yourTurn:'选择一个格子开始',
+    islandBadge:'⚓ 岛屿',islandTip:'需要海军才能进攻',
+    diffEasy:'简单开局',diffMedium:'中等',diffHard:'困难开局'
   }
 };
 
@@ -373,16 +384,54 @@ function buildCountryGrid() {
   grid.innerHTML = '';
   var info = initMapData();
   var keys = Object.keys(COUNTRY_DEFS);
+
+  // Detect island countries (no land neighbor to another country)
+  var isIsland = {};
+  for (var ci = 0; ci < keys.length; ci++) {
+    var code = keys[ci];
+    var hexList = info.countryHexes[code];
+    if (!hexList) continue;
+    var hasLandNeighbor = false;
+    for (var hi = 0; hi < hexList.length; hi++) {
+      var parts = hexList[hi].split(',');
+      var hc = parseInt(parts[0]), hr = parseInt(parts[1]);
+      var nb = getNeighbors(hc, hr);
+      for (var ni = 0; ni < nb.length; ni++) {
+        var nk = hexKey(nb[ni][0], nb[ni][1]);
+        var nh = info.hexes[nk];
+        if (nh && nh.origOwner !== code) { hasLandNeighbor = true; break; }
+      }
+      if (hasLandNeighbor) break;
+    }
+    isIsland[code] = !hasLandNeighbor;
+  }
+
   for (var i = 0; i < keys.length; i++) {
     var code = keys[i];
     var def = COUNTRY_DEFS[code];
     if (!info.countryHexes[code]) continue;
+    var hexCount = info.countryHexes[code].length;
     var card = document.createElement('div');
     card.className = 'country-card';
     card.style.background = def.color + '33';
     card.style.borderColor = def.color;
     var name = lang === 'cn' ? def.zh : def.en;
-    card.innerHTML = '<div class="name">' + name + '</div><div class="hexes">' + info.countryHexes[code].length + ' ' + t('hexes') + '</div>';
+    var stars = '';
+    for (var si = 0; si < def.q; si++) stars += '\u2B50';
+    var islandHTML = isIsland[code] ? '<div class="island-badge">' + t('islandBadge') + '</div>' : '';
+    // Difficulty rating
+    var diffLabel, diffClass;
+    if (isIsland[code] || hexCount < 5) {
+      diffLabel = t('diffHard'); diffClass = 'diff-hard';
+    } else if (hexCount >= 15 && !isIsland[code]) {
+      diffLabel = t('diffEasy'); diffClass = 'diff-easy';
+    } else {
+      diffLabel = t('diffMedium'); diffClass = 'diff-medium';
+    }
+    card.innerHTML = '<div class="name">' + name + '</div>' +
+      '<div class="hexes">' + hexCount + ' ' + t('hexes') + ' ' + stars + '</div>' +
+      '<div class="' + diffClass + '">' + diffLabel + '</div>' +
+      islandHTML;
     card.setAttribute('data-code', code);
     card.onclick = function() {
       var cards = document.querySelectorAll('.country-card');
@@ -603,8 +652,9 @@ function getOwnerName(owner) {
 }
 
 // ===== COMBAT =====
-function doCombat(attacker, defender, sendTroops, attackerOwner) {
-  var atkPower = sendTroops * (1 + (Math.random() * 0.3 - 0.15));
+function doCombat(attacker, defender, sendTroops, attackerOwner, navyMult) {
+  var mult = navyMult || 1;
+  var atkPower = sendTroops * mult * (1 + (Math.random() * 0.3 - 0.15));
   var defPower = defender.troops * (1.2 + defender.forts * 0.2) * (1 + (Math.random() * 0.3 - 0.15));
 
   attacker.troops -= sendTroops;
@@ -725,6 +775,46 @@ function aiAction(ai) {
     var best = candidates[0];
     var send = Math.floor(best.from.troops * 0.6);
     if (send > 0) doCombat(best.from, best.target, send, ai.id);
+  }
+
+  // Navy attack: 10% chance to attack a non-adjacent enemy hex
+  if (Math.random() < 0.10 && myHexes.length > 0) {
+    var strongNavy = myHexes[0];
+    for (var i = 1; i < myHexes.length; i++) {
+      if (myHexes[i].troops > strongNavy.troops) strongNavy = myHexes[i];
+    }
+    if (strongNavy.troops > 2000) {
+      // Find a non-adjacent enemy hex
+      var navyTargets = [];
+      for (var key in G.hexes) {
+        var th = G.hexes[key];
+        if (th.owner !== ai.id && th.owner !== 'player') continue; // only attack player or other AI
+        if (th.owner === ai.id) continue;
+        // Check it's not adjacent
+        var nb = getNeighbors(strongNavy.col, strongNavy.row);
+        var adj = false;
+        for (var ni = 0; ni < nb.length; ni++) {
+          if (nb[ni][0] === th.col && nb[ni][1] === th.row) { adj = true; break; }
+        }
+        if (!adj) navyTargets.push(th);
+      }
+      // Also include player-owned hexes
+      for (var key in G.hexes) {
+        var th = G.hexes[key];
+        if (th.owner !== 'player') continue;
+        var nb = getNeighbors(strongNavy.col, strongNavy.row);
+        var adj = false;
+        for (var ni = 0; ni < nb.length; ni++) {
+          if (nb[ni][0] === th.col && nb[ni][1] === th.row) { adj = true; break; }
+        }
+        if (!adj) navyTargets.push(th);
+      }
+      if (navyTargets.length > 0) {
+        navyTargets.sort(function(a, b) { return a.troops - b.troops; });
+        var navySend = Math.floor(strongNavy.troops * 0.5);
+        if (navySend > 0) doCombat(strongNavy, navyTargets[0], navySend, ai.id, 0.5);
+      }
+    }
   }
 }
 
@@ -1013,6 +1103,9 @@ function updateSidebar() {
     }
     html += '<button class="action-btn btn-attack"' + (!hasEnemy || hex.troops <= 0 ? ' disabled' : '') +
       ' onclick="startAttack()">' + t('attack') + '</button>';
+    html += '<button class="action-btn btn-navy"' + (hex.troops <= 0 ? ' disabled' : '') +
+      ' onclick="startNavy()">' + t('navy') +
+      '<br><small>' + t('navyCost') + '</small></button>';
   } else if (mode === 'move') {
     html += '<p style="color:#ffd200;font-size:.9em">' + t('moveSelect') + '</p>';
     var half = Math.floor(hex.troops / 2);
@@ -1023,6 +1116,15 @@ function updateSidebar() {
     html += '<button class="action-btn btn-cancel" onclick="cancelAction()">' + t('cancel') + '</button>';
   } else if (mode === 'attack') {
     html += '<p style="color:#ff6b6b;font-size:.9em">' + t('attackSelect') + '</p>';
+    var send = Math.floor(hex.troops * 0.7);
+    html += '<div class="slider-row"><span>' + t('amount') + '</span>' +
+      '<input type="range" id="troopSlider" min="1" max="' + hex.troops + '" value="' + send +
+      '" oninput="document.getElementById(\'troopVal\').textContent=formatNum(this.value)">' +
+      '<span id="troopVal" class="val">' + formatNum(send) + '</span></div>';
+    html += '<button class="action-btn btn-cancel" onclick="cancelAction()">' + t('cancel') + '</button>';
+  } else if (mode === 'navy') {
+    html += '<p style="color:#4FC3F7;font-size:.9em">' + t('navySelect') + '</p>';
+    html += '<p style="color:#FFC107;font-size:.8em">' + t('navyCost') + '</p>';
     var send = Math.floor(hex.troops * 0.7);
     html += '<div class="slider-row"><span>' + t('amount') + '</span>' +
       '<input type="range" id="troopSlider" min="1" max="' + hex.troops + '" value="' + send +
@@ -1075,6 +1177,11 @@ function startMove() {
 
 function startAttack() {
   mode = 'attack';
+  updateSidebar();
+}
+
+function startNavy() {
+  mode = 'navy';
   updateSidebar();
 }
 
@@ -1337,6 +1444,23 @@ function handleClick(cx, cy) {
           updateSidebar();
           return;
         }
+      }
+    }
+    mode = 'idle';
+  }
+
+  if (mode === 'navy') {
+    if (selectedHex && target.owner !== 'player') {
+      // Navy can attack ANY non-owned hex (not just adjacent)
+      var slider = document.getElementById('troopSlider');
+      var amount = slider ? parseInt(slider.value) : 0;
+      var srcHex = G.hexes[hexKey(selectedHex.col, selectedHex.row)];
+      if (srcHex && amount > 0 && amount <= srcHex.troops) {
+        doCombat(srcHex, target, amount, 'player', 0.5);
+        mode = 'idle';
+        selectedHex = { col: hex.col, row: hex.row };
+        updateSidebar();
+        return;
       }
     }
     mode = 'idle';
