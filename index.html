@@ -960,7 +960,7 @@ function render() {
       cx /= count; cy /= count;
       var def = COUNTRY_DEFS[code];
       var label = def ? (lang === 'cn' ? def.zh : def.en) : code;
-      var fontSize = Math.max(8, Math.min(14, Math.sqrt(count) * 2.5));
+      var fontSize = Math.max(14, Math.min(28, Math.sqrt(count) * 4));
       ctx.font = 'bold ' + fontSize + 'px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
