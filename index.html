@@ -875,16 +875,17 @@ function render() {
       ctx.stroke();
 
       // Troops text
-      if (hex.troops > 0 && zoom >= 0.5) {
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold ' + Math.max(5, Math.min(9, 8 * zoom)) + 'px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        var display = formatNum(hex.troops);
-        var textY = pos.y;
-        if (hex.factories > 0 || hex.forts > 0) textY -= 2;
-        ctx.fillText(display, pos.x, textY);
-      }
+      // Troop count on hexes - disabled (too cluttered)
+      // if (hex.troops > 0 && zoom >= 0.5) {
+      //   ctx.fillStyle = '#fff';
+      //   ctx.font = 'bold ' + Math.max(5, Math.min(9, 8 * zoom)) + 'px sans-serif';
+      //   ctx.textAlign = 'center';
+      //   ctx.textBaseline = 'middle';
+      //   var display = formatNum(hex.troops);
+      //   var textY = pos.y;
+      //   if (hex.factories > 0 || hex.forts > 0) textY -= 2;
+      //   ctx.fillText(display, pos.x, textY);
+      // }
 
       // Icons
       if (zoom >= 0.7) {
